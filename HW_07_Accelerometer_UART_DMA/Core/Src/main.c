@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -104,34 +104,42 @@ int main(void) {
 	/* USER CODE BEGIN 2 */
 
 	HAL_TIM_Base_Start_IT(&htim2);
+
+	// possible accelerometer versions
 	uint8_t accelerometer_lis2de = 0b01010000;
 	uint8_t accelerometer_lis2de12 = 0b00110000;
-	uint8_t control_reg1[] = { 0b00100000, 0b00011111 };
-	uint8_t control_reg2[] = { 0b00100001, 0b00000000 };
-	uint8_t control_reg4[] = { 0b00100011, 0b00000000 };
 
-	uint8_t out_x = 0x29, out_y = 0x2B, out_z = 0x2D;
-	uint8_t accelerometer;
+	uint8_t control_reg1[] = { 0b00100000, 0b00010111 }; // normal mode, 1hz sample rate
+	uint8_t control_reg2[] = { 0b00100001, 0b00000000 }; // no high pass filtering
+	uint8_t control_reg4[] = { 0b00100011, 0b00000000 }; // +-2g accelerations
+	uint8_t who_am_i[] = { 0b00001111, 0b00110011 }; // used for checking device presence
+
+	uint8_t out_x = 0x29, out_y = 0x2B, out_z = 0x2D; // addresses of x,y,z accelerations
+	uint8_t accelerometer; // accelerometer address
 
 	char buffer[128];
 	int len;
 
-	if (HAL_I2C_Master_Transmit(&hi2c1, accelerometer_lis2de, control_reg1, 2,
-			100) == HAL_OK) {
-		len = snprintf(buffer, sizeof(buffer), "LIS2DE found\r\n");
-		accelerometer = accelerometer_lis2de;
-	} else if (HAL_I2C_Master_Transmit(&hi2c1, accelerometer_lis2de12,
-			control_reg1, 2, 100) == HAL_OK) {
+	// enabling normal mode (1Hz) and enabling X,Y,Z outputs
+	if (HAL_I2C_Master_Transmit(&hi2c1, accelerometer_lis2de12, who_am_i, 2, 100) == HAL_OK) {
 		len = snprintf(buffer, sizeof(buffer), "LIS2DE12 found\r\n");
 		accelerometer = accelerometer_lis2de12;
+	} else if (HAL_I2C_Master_Transmit(&hi2c1, accelerometer_lis2de, who_am_i, 2, 100) == HAL_OK) {
+		len = snprintf(buffer, sizeof(buffer), "LIS2DE found\r\n");
+		accelerometer = accelerometer_lis2de;
 	} else {
 		len = snprintf(buffer, sizeof(buffer), "Accelerometer error\r\n");
 		return 0;
 	}
 
+	// send device info via UART
 	HAL_UART_Transmit_DMA(&huart2, (uint8_t*) buffer, len);
 
+	// normal mode selection, 1 hz sampling rate
+	HAL_I2C_Master_Transmit(&hi2c1, accelerometer, control_reg1, 2, 100);
+	// no high pass filtering
 	HAL_I2C_Master_Transmit(&hi2c1, accelerometer, control_reg2, 2, 100);
+	// setting the +/- 2g full scale range in normal mode
 	HAL_I2C_Master_Transmit(&hi2c1, accelerometer, control_reg4, 2, 100);
 
 	/* USER CODE END 2 */
@@ -139,28 +147,26 @@ int main(void) {
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1) {
-
+		// every 1 second, reads accelerometer values
 		if (timer_flag == 1) {
 			int8_t acc_x = 0;
 			HAL_I2C_Master_Transmit(&hi2c1, accelerometer, &out_x, 1, 100);
-			HAL_I2C_Master_Receive(&hi2c1, accelerometer | 1, (uint8_t*) &acc_x,
-					1, 100);
+			HAL_I2C_Master_Receive(&hi2c1, accelerometer | 1, (uint8_t*) &acc_x, 1, 100);
 			float acc_g_x = acc_x / 64.0;
+
 			int8_t acc_y = 0;
 			HAL_I2C_Master_Transmit(&hi2c1, accelerometer, &out_y, 1, 100);
-			HAL_I2C_Master_Receive(&hi2c1, accelerometer | 1, (uint8_t*) &acc_y,
-					1, 100);
+			HAL_I2C_Master_Receive(&hi2c1, accelerometer | 1, (uint8_t*) &acc_y, 1, 100);
 			float acc_g_y = acc_y / 64.0;
+
 			int8_t acc_z = 0;
 			HAL_I2C_Master_Transmit(&hi2c1, accelerometer, &out_z, 1, 100);
-			HAL_I2C_Master_Receive(&hi2c1, accelerometer | 1, (uint8_t*) &acc_z,
-					1, 100);
+			HAL_I2C_Master_Receive(&hi2c1, accelerometer | 1, (uint8_t*) &acc_z, 1, 100);
 			float acc_g_z = acc_z / 64.0;
 
-			len = snprintf(buffer, sizeof(buffer),
-					"X= %+.3f g \r\nY= %+.3f g \r\nZ= %+.3f g \r\n", acc_g_x,
-					acc_g_y, acc_g_z);
+			len = snprintf(buffer, sizeof(buffer), "X= %+.3f g \r\nY= %+.3f g \r\nZ= %+.3f g \r\n", acc_g_x, acc_g_y, acc_g_z);
 			HAL_UART_Transmit_DMA(&huart2, (uint8_t*) buffer, len);
+
 			timer_flag = 0;
 		}
 
@@ -202,8 +208,7 @@ void SystemClock_Config(void) {
 
 	/** Initializes the CPU, AHB and APB buses clocks
 	 */
-	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-			| RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
 	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
 	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
 	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -278,8 +283,7 @@ static void MX_TIM2_Init(void) {
 	}
 	sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
 	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-	if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig)
-			!= HAL_OK) {
+	if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK) {
 		Error_Handler();
 	}
 	/* USER CODE BEGIN TIM2_Init 2 */

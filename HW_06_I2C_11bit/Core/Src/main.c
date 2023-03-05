@@ -101,14 +101,15 @@ int main(void) {
 	/* USER CODE BEGIN 2 */
 
 	uint16_t lm75_address = 0b10010001; // configuration for reading from temperature sensor
-	uint8_t lm75_temp_data = 0b00000000; // where data is saved
+	uint8_t lm75_temperature_register = 0x00; // where temperature register stores data
 
 	uint8_t temp_bytes[2];
 
 	int length = 0;
 	char string[32];
 	//initialization of the temperature sensor
-	HAL_I2C_Master_Transmit(&hi2c1, lm75_address, &lm75_temp_data, 1, 10);
+	HAL_I2C_Master_Transmit(&hi2c1, lm75_address, &lm75_temperature_register, 1,
+			10);
 
 	HAL_TIM_Base_Start_IT(&htim2);
 
