@@ -31,4 +31,9 @@
 *.out
 *.app
 
+# specific to STM32CubeIDE
 /.metadata
+
+*/Debug
+*.launch
+
