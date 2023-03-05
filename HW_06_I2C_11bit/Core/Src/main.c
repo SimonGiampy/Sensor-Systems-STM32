@@ -103,13 +103,13 @@ int main(void) {
 	uint16_t lm75_address = 0b10010001; // configuration for reading from temperature sensor
 	uint8_t lm75_temperature_register = 0x00; // where temperature register stores data
 
-	uint8_t temp_bytes[2];
+	uint8_t temp_bytes[2]; // data values (MSB and LSB) stored after reading temperature from sensor
 
 	int length = 0;
 	char string[32];
+
 	//initialization of the temperature sensor
-	HAL_I2C_Master_Transmit(&hi2c1, lm75_address, &lm75_temperature_register, 1,
-			10);
+	HAL_I2C_Master_Transmit(&hi2c1, lm75_address, &lm75_temperature_register, 1, 10);
 
 	HAL_TIM_Base_Start_IT(&htim2);
 
@@ -124,16 +124,13 @@ int main(void) {
 		// triggers when the timer expires (after 1 second)
 		if (flag) {
 			// reads 2 bytes (2 values of 8 bits)
-			if (HAL_I2C_Master_Receive(&hi2c1, lm75_address, temp_bytes, 2, 20)
-					== HAL_OK) {
-				int16_t value = (int16_t) ((uint16_t) temp_bytes[0] << 8
-						| temp_bytes[1]); // data reading
-				float temp = value / 256.0; // temperature conversion
-				length = snprintf(string, sizeof(string),
-						"Temperature: %.3f °C\r\n", temp);
+			if (HAL_I2C_Master_Receive(&hi2c1, lm75_address, temp_bytes, 2, 20) == HAL_OK) {
+				// data reading of MSB and LSB, converted into a 16bit integer value
+				int16_t value = (int16_t) ((uint16_t) temp_bytes[0] << 8 | temp_bytes[1]);
+				float temp = value / 256.0; // temperature conversion in celsius
+				length = snprintf(string, sizeof(string), "Temperature: %.3f °C\r\n", temp);
 			} else {
-				length = snprintf(string, sizeof(string),
-						"Error reading from LM75B\r\n");
+				length = snprintf(string, sizeof(string), "Error reading from LM75B\r\n");
 			}
 
 			HAL_UART_Transmit(&huart2, (uint8_t*) string, length, 100); // output on UART interface
@@ -175,8 +172,7 @@ void SystemClock_Config(void) {
 
 	/** Initializes the CPU, AHB and APB buses clocks
 	 */
-	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-			| RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
 	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
 	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
 	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -251,8 +247,7 @@ static void MX_TIM2_Init(void) {
 	}
 	sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
 	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-	if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig)
-			!= HAL_OK) {
+	if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK) {
 		Error_Handler();
 	}
 	/* USER CODE BEGIN TIM2_Init 2 */

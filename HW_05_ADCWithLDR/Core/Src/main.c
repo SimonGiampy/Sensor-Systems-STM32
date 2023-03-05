@@ -68,22 +68,23 @@ float values[1000];
 uint16_t converted = 0;
 int position = 0;
 
+// when the conversion is finished, every 1ms this is called
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
+	// converts values from 0 to 4096 to voltage (up to 3.3v)
 	values[position] = converted * 3.3 / 4096.0;
 	position++;
 
-	if (position == 1000) {
+	if (position == 1000) { // after 1 full second of conversions
 		float average = 0.0;
 		for (int i = 0; i < 1000; i++) {
 			average += values[i];
 		}
-		average = average / 1000.0;
+		average = average / 1000.0; // average computation of the values over the last second of time
 
-		float ldr = ((average * 100000.0) / (3.3 - average));
-		float lux = 10.0 * pow((100000.0 / ldr), 1.25);
-		char string[64];
-		int length = snprintf(string, sizeof(string), "Lux level = %.3f\r\n",
-				lux);
+		float ldr = ((average * 100000.0) / (3.3 - average)); // LDR output value
+		float lux = 10.0 * pow((100000.0 / ldr), 1.25); // conversion from voltage to LUX
+		char string[64]; // output
+		int length = snprintf(string, sizeof(string), "Lux level = %.3f\r\n", lux);
 
 		HAL_UART_Transmit(&huart2, (uint8_t*) string, length, 200);
 		position = 0;
@@ -169,8 +170,7 @@ void SystemClock_Config(void) {
 
 	/** Initializes the CPU, AHB and APB buses clocks
 	 */
-	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-			| RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
 	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
 	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
 	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -262,8 +262,7 @@ static void MX_TIM2_Init(void) {
 	}
 	sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
 	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-	if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig)
-			!= HAL_OK) {
+	if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK) {
 		Error_Handler();
 	}
 	/* USER CODE BEGIN TIM2_Init 2 */

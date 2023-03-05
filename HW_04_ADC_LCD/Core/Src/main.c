@@ -61,6 +61,7 @@ static void MX_TIM2_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
 // conversion from ADC callback
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
 	HAL_TIM_Base_Stop(&htim2);
@@ -101,10 +102,11 @@ int main(void) {
 	MX_ADC1_Init();
 	MX_TIM2_Init();
 	/* USER CODE BEGIN 2 */
+
 	lcd_initialize();
 	lcd_backlight_ON();
-	HAL_TIM_Base_Start(&htim2);
-	HAL_ADC_Start_IT(&hadc1);
+	HAL_TIM_Base_Start(&htim2); // starts timer 2 for signaling rate of conversion
+	HAL_ADC_Start_IT(&hadc1); // ADC conversion with interrupt routine
 
 	/* USER CODE END 2 */
 
@@ -117,7 +119,7 @@ int main(void) {
 			float voltage = conversion * 3.3 / 4096.0;
 			snprintf(string, sizeof(string), "Voltage = %.3fV\n", voltage);
 
-			// prints to LCD
+			// prints to LCD the progress bar (from 0 to 80)
 			lcd_clear();
 			lcd_println(string, 0);
 			lcd_drawBar((int) conversion * 80.0 / 4096.0);
@@ -162,8 +164,7 @@ void SystemClock_Config(void) {
 
 	/** Initializes the CPU, AHB and APB buses clocks
 	 */
-	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-			| RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
 	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
 	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
 	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -255,8 +256,7 @@ static void MX_TIM2_Init(void) {
 	}
 	sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
 	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-	if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig)
-			!= HAL_OK) {
+	if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK) {
 		Error_Handler();
 	}
 	/* USER CODE BEGIN TIM2_Init 2 */
@@ -315,8 +315,7 @@ static void MX_GPIO_Init(void) {
 
 	/*Configure GPIO pin Output Level */
 	HAL_GPIO_WritePin(GPIOB,
-			GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14
-					| GPIO_PIN_15, GPIO_PIN_RESET);
+	GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15, GPIO_PIN_RESET);
 
 	/*Configure GPIO pin : B1_Pin */
 	GPIO_InitStruct.Pin = B1_Pin;
@@ -333,8 +332,7 @@ static void MX_GPIO_Init(void) {
 
 	/*Configure GPIO pins : PB1 PB2 PB12 PB13
 	 PB14 PB15 */
-	GPIO_InitStruct.Pin = GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_12 | GPIO_PIN_13
-			| GPIO_PIN_14 | GPIO_PIN_15;
+	GPIO_InitStruct.Pin = GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

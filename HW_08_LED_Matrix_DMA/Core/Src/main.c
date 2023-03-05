@@ -49,11 +49,10 @@ TIM_HandleTypeDef htim2;
 
 UART_HandleTypeDef huart2;
 
-uint8_t matrixB[5][2] = { { 127, 16 }, { 73, 8 }, { 73, 4 }, { 73, 2 },
-		{ 54, 1 } };
-
-uint8_t matrix7[5][2] = { { 65, 16 }, { 66, 8 }, { 68, 4 }, { 72, 2 },
-		{ 112, 1 } };
+// letter B
+uint8_t matrixB[5][2] = { { 127, 16 }, { 73, 8 }, { 73, 4 }, { 73, 2 }, { 54, 1 } };
+// number 7
+uint8_t matrix7[5][2] = { { 65, 16 }, { 66, 8 }, { 68, 4 }, { 72, 2 }, { 112, 1 } };
 
 /* USER CODE END PV */
 
@@ -74,17 +73,20 @@ static void MX_TIM2_Init(void);
 int elapsed = 0;
 int index_column = 0;
 
+// the timer is triggered every 4ms, and updates all 5 columns sequentially, then restarting
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	if (htim == &htim2) {
 		elapsed += 1;
-		if (elapsed <= 200) {
+		if (elapsed <= 200) { // less than 1 second elapsed
+			// set -> transmit DMA -> reset
 			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
 			HAL_SPI_Transmit_DMA(&hspi1, matrixB[index_column], 2);
 			index_column = (index_column + 1) % 5;
 			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET);
-		} else if (elapsed == 400) {
+		} else if (elapsed == 400) { // resets counter after 2 seconds (2 iterations over the 2 letters)
 			elapsed = 0;
-		} else if (elapsed >= 200) {
+		} else if (elapsed >= 200) { // less than 2 seconds elapsed
+			// set -> transmit DMA -> reset
 			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
 			HAL_SPI_Transmit_DMA(&hspi1, matrix7[index_column], 2);
 			index_column = (index_column + 1) % 5;
@@ -127,6 +129,7 @@ int main(void) {
 	MX_SPI1_Init();
 	MX_TIM2_Init();
 	/* USER CODE BEGIN 2 */
+	//only relevant piece of code here
 	HAL_TIM_Base_Start_IT(&htim2);
 	/* USER CODE END 2 */
 
@@ -171,8 +174,7 @@ void SystemClock_Config(void) {
 
 	/** Initializes the CPU, AHB and APB buses clocks
 	 */
-	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-			| RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
 	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
 	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
 	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -251,8 +253,7 @@ static void MX_TIM2_Init(void) {
 	}
 	sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
 	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-	if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig)
-			!= HAL_OK) {
+	if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK) {
 		Error_Handler();
 	}
 	/* USER CODE BEGIN TIM2_Init 2 */

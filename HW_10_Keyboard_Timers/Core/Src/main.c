@@ -80,11 +80,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 int isAnyButtonPressed();
 
+// returns true if any of the 16 buttons is pressed at a certain moment
 int isAnyButtonPressed() {
-	return !(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_12)
-			&& HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13)
-			&& HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_2)
-			&& HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_3));
+	return !(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_12) && HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) && HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_2) && HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_3));
 }
 
 /* USER CODE END 0 */
@@ -161,7 +159,7 @@ int main(void) {
 			}
 			counter = __HAL_TIM_GetCounter(&htim5);
 		} while (isAnyButtonPressed() && (counter <= 84000.0 * time_button_press - 1.0));
-		// until button is being pressed or the button is being pressed for the defined amount of time
+		// until button is being pressed or the button is being pressed for the defined amount of seconds
 		// when the button is released, we count for how long it was pressed
 
 		HAL_TIM_Base_Stop(&htim5);
@@ -176,12 +174,11 @@ int main(void) {
 						// copies character corresponding to the pressed button in the string
 						string[0] = map[i];
 						// prints string containing the pressed character on terminal
-						HAL_UART_Transmit(&huart2, (uint8_t*) string,
-								sizeof(string), 10);
+						HAL_UART_Transmit(&huart2, (uint8_t*) string, sizeof(string), 10);
 						ack[i] = 1;
 					}
-				}else {
-					ack [i] = 0;
+				} else {
+					ack[i] = 0;
 				}
 			}
 		}
@@ -224,8 +221,7 @@ void SystemClock_Config(void) {
 
 	/** Initializes the CPU, AHB and APB buses clocks
 	 */
-	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-			| RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
 	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
 	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
 	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -268,8 +264,7 @@ static void MX_TIM2_Init(void) {
 	}
 	sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
 	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-	if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig)
-			!= HAL_OK) {
+	if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK) {
 		Error_Handler();
 	}
 	/* USER CODE BEGIN TIM2_Init 2 */
@@ -310,8 +305,7 @@ static void MX_TIM5_Init(void) {
 	}
 	sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
 	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-	if (HAL_TIMEx_MasterConfigSynchronization(&htim5, &sMasterConfig)
-			!= HAL_OK) {
+	if (HAL_TIMEx_MasterConfigSynchronization(&htim5, &sMasterConfig) != HAL_OK) {
 		Error_Handler();
 	}
 	/* USER CODE BEGIN TIM5_Init 2 */
@@ -370,8 +364,7 @@ static void MX_GPIO_Init(void) {
 
 	/*Configure GPIO pin Output Level */
 	HAL_GPIO_WritePin(GPIOC,
-			GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_10 | GPIO_PIN_11,
-			GPIO_PIN_RESET);
+	GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_10 | GPIO_PIN_11, GPIO_PIN_RESET);
 
 	/*Configure GPIO pins : PC13 PC2 PC3 PC12 */
 	GPIO_InitStruct.Pin = GPIO_PIN_13 | GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_12;
