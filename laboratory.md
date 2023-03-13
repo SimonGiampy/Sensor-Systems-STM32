@@ -108,7 +108,8 @@ __DMA__:
 - add Tx DMA entry on DMA settings
 - enable global interrupt in NVIC settings
 - enable normal mode and check the memory flag. as default data width is set to bytes 
-- `void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)`
+- Transmit callback: `void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)`
+- Receive callback: `void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)`
 
 ---
 
@@ -186,7 +187,7 @@ Parameter settings:
 - Pin PA5 = SPI1_SCK; Pin PA7 = SPI_MOSI; Pin PB6 = GPIO_Output.
 - SPI Mode: Transmit only master
 - timer: quick enough to see continuous light (update all the led matrix in less than 4ms -> frequency > 1250Hz)
-- DMA: add DMA with TX mode and default settings
+- DMA: add DMA with TX mode and default settings and normal code
 
 Code:
 - `HAL_SPI_Transmit(SPI_HandleTypeDef*hspi, uint8_t * pData, uint16_t Size, uint32_t Timeout)` // transmission of string pData
@@ -217,6 +218,21 @@ debounce: register more presses of the button to validate it
 Keyboard mapping buttons to a character:
 
 `char map [16] = "FB73EA62D951C840";` // columns in the map: 10 9 8 11 //rows in the map: 3 2 13 12
+
+---
+
+## Infrared:
+
+Configuration:
+- timer 3 at 2400 Hz used to send an interrupt, waiting for the baud period, in order to send each bit every 1 / 2400 s (approximately 4 ms). Timer3 configured as a timer interrupt with PSC=0, ARR=35000-1
+- timer 2 PWM on channel 3 is used to make the IR led pulse at 38 KHz. PSC=0, ARR=2211-1. Transmission of bit 1 requires PWM_Stop, instead tranmitting bit 0 requires PWM_Start. Transmission lasts a baud period, until the next bit is transmitted.
+- the string is transmitted one byte at a time, where each byte is composed of 8 bits, and each bit transmits at the baud rate
+- transmission via IR happens on UART1 interface at 2400 bytes/s baud rate
+- reception of character (1 byte = 8 bits) via IR happens with `void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)`
+- enable global interrupt for UART1
+- PB10 = IR Led attached to TIM2_CH3 PWM
+- PA10 receiver USART1RX
+- PA9 transmitter USART1TX
 
 ---
 
