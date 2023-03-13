@@ -21,7 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdlib.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -71,68 +72,43 @@ static void MX_TIM10_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-#include <stdlib.h>
-#include <string.h>
+void IRByteTransmit(char byte);
 
 int column;
 
 int matrixColumn = 0;
 char symbol = '0';
 
+// mapping characters for the led matrix
 struct character {
 	uint8_t row;
 	uint8_t col;
 };
 
-struct character ZERO[] = { { 62, 1 }, { 65, 2 }, { 65, 4 }, { 65, 8 },
-		{ 62, 16 } };
+struct character ZERO[] = { { 62, 1 }, { 65, 2 }, { 65, 4 }, { 65, 8 }, { 62, 16 } };
+struct character ONE[] = { { 0, 1 }, { 1, 2 }, { 127, 4 }, { 33, 8 }, { 0, 16 } };
+struct character TWO[] = { { 49, 1 }, { 73, 2 }, { 69, 4 }, { 67, 8 }, { 49, 16 } };
+struct character THREE[] = { { 54, 1 }, { 73, 2 }, { 73, 4 }, { 73, 8 }, { 65, 16 } };
+struct character FOUR[] = { { 4, 1 }, { 127, 2 }, { 36, 4 }, { 20, 8 }, { 12, 16 } };
+struct character FIVE[] = { { 70, 1 }, { 73, 2 }, { 73, 4 }, { 73, 8 }, { 121, 16 } };
+struct character SIX[] = { { 6, 1 }, { 73, 2 }, { 73, 4 }, { 73, 8 }, { 62, 16 } };
+struct character SEVEN[] = { { 96, 1 }, { 80, 2 }, { 79, 4 }, { 64, 8 }, { 64, 16 } };
+struct character EIGHT[] = { { 54, 1 }, { 73, 2 }, { 73, 4 }, { 73, 8 }, { 54, 16 } };
+struct character NINE[] = { { 62, 1 }, { 73, 2 }, { 73, 4 }, { 73, 8 }, { 48, 16 } };
 
-struct character ONE[] =
-		{ { 0, 1 }, { 1, 2 }, { 127, 4 }, { 33, 8 }, { 0, 16 } };
-
-struct character TWO[] = { { 49, 1 }, { 73, 2 }, { 69, 4 }, { 67, 8 },
-		{ 49, 16 } };
-
-struct character THREE[] = { { 54, 1 }, { 73, 2 }, { 73, 4 }, { 73, 8 }, { 65,
-		16 } };
-
-struct character FOUR[] = { { 4, 1 }, { 127, 2 }, { 36, 4 }, { 20, 8 },
-		{ 12, 16 } };
-
-struct character FIVE[] = { { 70, 1 }, { 73, 2 }, { 73, 4 }, { 73, 8 }, { 121,
-		16 } };
-
-struct character SIX[] =
-		{ { 6, 1 }, { 73, 2 }, { 73, 4 }, { 73, 8 }, { 62, 16 } };
-
-struct character SEVEN[] = { { 96, 1 }, { 80, 2 }, { 79, 4 }, { 64, 8 }, { 64,
-		16 } };
-
-struct character EIGHT[] = { { 54, 1 }, { 73, 2 }, { 73, 4 }, { 73, 8 }, { 54,
-		16 } };
-
-struct character NINE[] = { { 62, 1 }, { 73, 2 }, { 73, 4 }, { 73, 8 },
-		{ 48, 16 } };
-
-struct character A[] =
-		{ { 31, 1 }, { 36, 2 }, { 68, 4 }, { 36, 8 }, { 31, 16 } };
-
-struct character B[] =
-		{ { 62, 1 }, { 73, 2 }, { 73, 4 }, { 73, 8 }, { 127, 16 } };
-
-struct character C[] =
-		{ { 65, 1 }, { 65, 2 }, { 65, 4 }, { 65, 8 }, { 62, 16 } };
-struct character D[] =
-		{ { 62, 1 }, { 65, 2 }, { 65, 4 }, { 65, 8 }, { 127, 16 } };
-struct character E[] =
-		{ { 73, 1 }, { 73, 2 }, { 73, 4 }, { 73, 8 }, { 127, 16 } };
-struct character F[] =
-		{ { 72, 1 }, { 72, 2 }, { 72, 4 }, { 72, 8 }, { 127, 16 } };
+struct character A[] = { { 31, 1 }, { 36, 2 }, { 68, 4 }, { 36, 8 }, { 31, 16 } };
+struct character B[] = { { 62, 1 }, { 73, 2 }, { 73, 4 }, { 73, 8 }, { 127, 16 } };
+struct character C[] = { { 65, 1 }, { 65, 2 }, { 65, 4 }, { 65, 8 }, { 62, 16 } };
+struct character D[] = { { 62, 1 }, { 65, 2 }, { 65, 4 }, { 65, 8 }, { 127, 16 } };
+struct character E[] = { { 73, 1 }, { 73, 2 }, { 73, 4 }, { 73, 8 }, { 127, 16 } };
+struct character F[] = { { 72, 1 }, { 72, 2 }, { 72, 4 }, { 72, 8 }, { 127, 16 } };
 
 char receivedByte;
 
+// flag for iterating bit by bit
 int elapsedBaud = 0;
 
+// flags used for iterating on the keyboard
 int column_index = 0;
 int column_flag = 1;
 
@@ -142,59 +118,70 @@ char map[16] = "FB73EA62D951C840";
 int key_press[16];
 int ack[16];
 
+// transmits 1 byte via infrared sensor using UART1 interface
 void IRByteTransmit(char byte) {
+
+	//Start the baud rate counter (2400bps)
 	elapsedBaud = 1;
 	HAL_TIM_Base_Start_IT(&htim3);
 	while (elapsedBaud == 0) {
-
+		//wait one baud period to sync -> useful for the first transmission
 	}
 
+	//transmit START signal ('0')
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
 	elapsedBaud = 0;
 	while (elapsedBaud == 0) {
-
+		//wait for a baud period
 	}
 
+	//transmit the bits
 	for (int i = 0; i < 8; i++) {
 		if ((byte & (0x01 << i)) == 0) {
+			//send a zero -> start PWM
 			HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
 		} else {
+			//send a '1' -> stop PWM
 			HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_3);
 		}
 		elapsedBaud = 0;
 		while (elapsedBaud == 0) {
-
+			//wait for a baud period
 		}
 	}
 
+	//Send the Stop bit '1'
 	HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_3);
 	while (elapsedBaud == 0) {
-
+		//wait for a baud period
 	}
 
+	//stop timer for baud rate
 	HAL_TIM_Base_Stop_IT(&htim3);
 	elapsedBaud = 0;
 
 }
 
+// receive one character (1 byte) via UART1 interface using IR communication
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-
+	// interrupt managed only for IR sensor
 	if (huart == &huart1) {
-
+		// saves byte received
 		HAL_UART_Receive_IT(&huart1, (uint8_t*) &receivedByte, 1);
-
 		char RX = receivedByte;
-
 		symbol = RX;
 	}
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-
+	// if interrupt is from the timer handling the bits transmission via IR
 	if (htim == &htim3) {
 		elapsedBaud = 1;
 	}
+
+	// update led matrix columns using timer 10 interrupt
 	if (htim == &htim10) {
+		// converts character into its corresponding matrix led structure
 		struct character *chosen;
 		switch (symbol) {
 		case '0':
@@ -247,19 +234,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 			break;
 
 		}
+		// writes character using SPI communication to the led matrix, using the chosen led matrix structure
 		HAL_SPI_Transmit_DMA(&hspi1, (uint8_t*) (chosen + matrixColumn), 2);
 	}
 }
 
+// DMA callback for the SPI communication to change the led matrix structure
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
 	if (hspi == &hspi1) {
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, 1);
-
+		// enables write
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
 		matrixColumn = (matrixColumn + 1) % 5;
-
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, 0);
-
-		HAL_TIM_Base_Start_IT(&htim10);
+		// disables write
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET);
 
 	}
 }
@@ -302,7 +289,9 @@ int main(void) {
 	MX_TIM10_Init();
 	/* USER CODE BEGIN 2 */
 
+	// timer 10 interrupt used to update the led matrix columns 
 	HAL_TIM_Base_Start_IT(&htim10);
+	// this is the uart1 interrupt for IR reception of the byte
 	HAL_UART_Receive_IT(&huart1, (uint8_t*) &receivedByte, 1);
 
 	/* USER CODE END 2 */
@@ -329,7 +318,7 @@ int main(void) {
 		for (int i = 0; i < 16; i++) {
 			if (key_press[i]) { // if the corresponding button was pressed
 				if (!ack[i]) {
-					// prints string containing the pressed character on terminal
+					// transmits character read from the keyboard via IR transmitter
 					IRByteTransmit(map[i]);
 					ack[i] = 1;
 				}
@@ -376,8 +365,7 @@ void SystemClock_Config(void) {
 
 	/** Initializes the CPU, AHB and APB buses clocks
 	 */
-	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-			| RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
 	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
 	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
 	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -460,16 +448,14 @@ static void MX_TIM2_Init(void) {
 	}
 	sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
 	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-	if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig)
-			!= HAL_OK) {
+	if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK) {
 		Error_Handler();
 	}
 	sConfigOC.OCMode = TIM_OCMODE_PWM2;
 	sConfigOC.Pulse = 1105;
 	sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
 	sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-	if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_3)
-			!= HAL_OK) {
+	if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_3) != HAL_OK) {
 		Error_Handler();
 	}
 	/* USER CODE BEGIN TIM2_Init 2 */
@@ -511,8 +497,7 @@ static void MX_TIM3_Init(void) {
 	}
 	sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
 	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-	if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig)
-			!= HAL_OK) {
+	if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK) {
 		Error_Handler();
 	}
 	/* USER CODE BEGIN TIM3_Init 2 */
@@ -643,8 +628,7 @@ static void MX_GPIO_Init(void) {
 
 	/*Configure GPIO pin Output Level */
 	HAL_GPIO_WritePin(GPIOC,
-			GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_10 | GPIO_PIN_11,
-			GPIO_PIN_RESET);
+	GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_10 | GPIO_PIN_11, GPIO_PIN_RESET);
 
 	/*Configure GPIO pin Output Level */
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET);
