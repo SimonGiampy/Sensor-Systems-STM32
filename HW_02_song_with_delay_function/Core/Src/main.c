@@ -58,14 +58,13 @@ struct note {
 
 /* Private variables ---------------------------------------------------------*/
 TIM_HandleTypeDef htim1;
+
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-struct note song[] = { { SOL, 6 }, { LA, 2 }, { SOL, 4 }, { FA, 4 }, { MI, 4 },
-		{ FA, 4 }, { SOL, 8 }, { RE, 4 }, { MI, 4 }, { FA, 8 }, { MI, 4 }, { FA,
-				4 }, { SOL, 8 }, { SOL, 6 }, { LA, 2 }, { SOL, 4 }, { FA, 4 }, {
-				MI, 4 }, { FA, 4 }, { SOL, 8 }, { RE, 8 }, { SOL, 8 },
-		{ MI, 4 }, { DO, 10 }
+struct note song[] = { { SOL, 6 }, { LA, 2 }, { SOL, 4 }, { FA, 4 }, { MI, 4 }, { FA, 4 }, { SOL, 8 }, { RE, 4 }, { MI, 4 }, { FA, 8 }, { MI, 4 }, { FA, 4 }, { SOL, 8 }, { SOL, 6 }, { LA, 2 }, { SOL,
+		4 }, { FA, 4 }, {
+MI, 4 }, { FA, 4 }, { SOL, 8 }, { RE, 8 }, { SOL, 8 }, { MI, 4 }, { DO, 10 }
 
 };
 /* USER CODE END PV */
@@ -118,8 +117,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 			HAL_NVIC_DisableIRQ(EXTI9_5_IRQn);
 		}
 		break;
-	default:
-		break;
+
 	}
 
 }
@@ -206,8 +204,7 @@ void SystemClock_Config(void) {
 
 	/** Initializes the CPU, AHB and APB buses clocks
 	 */
-	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-			| RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
 	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
 	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
 	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -256,8 +253,7 @@ static void MX_TIM1_Init(void) {
 	}
 	sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
 	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-	if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig)
-			!= HAL_OK) {
+	if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK) {
 		Error_Handler();
 	}
 	sConfigOC.OCMode = TIM_OCMODE_PWM1;
@@ -267,8 +263,7 @@ static void MX_TIM1_Init(void) {
 	sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
 	sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
 	sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-	if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_2)
-			!= HAL_OK) {
+	if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_2) != HAL_OK) {
 		Error_Handler();
 	}
 	sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
@@ -278,8 +273,7 @@ static void MX_TIM1_Init(void) {
 	sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
 	sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
 	sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
-	if (HAL_TIMEx_ConfigBreakDeadTime(&htim1, &sBreakDeadTimeConfig)
-			!= HAL_OK) {
+	if (HAL_TIMEx_ConfigBreakDeadTime(&htim1, &sBreakDeadTimeConfig) != HAL_OK) {
 		Error_Handler();
 	}
 	/* USER CODE BEGIN TIM1_Init 2 */
@@ -327,6 +321,8 @@ static void MX_USART2_UART_Init(void) {
  */
 static void MX_GPIO_Init(void) {
 	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+	/* USER CODE BEGIN MX_GPIO_Init_1 */
+	/* USER CODE END MX_GPIO_Init_1 */
 
 	/* GPIO Ports Clock Enable */
 	__HAL_RCC_GPIOC_CLK_ENABLE();
@@ -360,6 +356,8 @@ static void MX_GPIO_Init(void) {
 	HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
 	HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
+	/* USER CODE BEGIN MX_GPIO_Init_2 */
+	/* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */

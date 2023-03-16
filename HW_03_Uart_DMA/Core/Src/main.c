@@ -90,9 +90,7 @@ int main(void) {
 	MX_DMA_Init();
 	MX_USART2_UART_Init();
 	/* USER CODE BEGIN 2 */
-
-	char *names[5] = { "Claudio 1999\r\n", "Giacomo 1999\r\n",
-			"LucaFrancesco 1998\r\n", "Johanna 1999\r\n", "Simone 1999\r\n" };
+	char *names[5] = { "Claudio 1999\r\n", "Giacomo 1999\r\n", "LucaFrancesco 1998\r\n", "Johanna 1999\r\n", "Simone 1999\r\n" };
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -141,8 +139,7 @@ void SystemClock_Config(void) {
 
 	/** Initializes the CPU, AHB and APB buses clocks
 	 */
-	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-			| RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
 	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
 	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
 	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -206,6 +203,8 @@ static void MX_DMA_Init(void) {
  */
 static void MX_GPIO_Init(void) {
 	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+	/* USER CODE BEGIN MX_GPIO_Init_1 */
+	/* USER CODE END MX_GPIO_Init_1 */
 
 	/* GPIO Ports Clock Enable */
 	__HAL_RCC_GPIOC_CLK_ENABLE();
@@ -229,6 +228,8 @@ static void MX_GPIO_Init(void) {
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
+	/* USER CODE BEGIN MX_GPIO_Init_2 */
+	/* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
