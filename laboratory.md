@@ -121,7 +121,7 @@ There are three main modes of operation (__end of conversion__):
 - Simple interrupt mode: the ADC provides an interrupt at the end of the conversion and reads directly the value from the peripheral
 > `HAL_ADC_Start_IT(&hadc1)`
 
-- DMA mode with interrupt: the ADC provides an interrupt when the value read from the peripheral is written on memory and ready to be accessed. DMA settings > add > Mode: Circular. DMA continuous requests: enabled
+- DMA mode with interrupt: the ADC provides an interrupt when the value read from the peripheral is written on memory and ready to be accessed. DMA settings > add > Mode: Circular. DMA continuous requests: disabled
 > `HAL_ADC_Start_DMA(&hadc1, (uint16_t*) data, bufflen)`
 
 There are three modes of __starting the conversion__:
@@ -148,10 +148,15 @@ Configuration of the ADC parameters:
 - check that IN1 is flagged in the ADC settings
 - conversion mode: can be set to *regular* or *circular* depending on how to read the values and how many channels to read from
 - external trigger conversion: [software OR Timer 2 Trigger Out event] for selection of the start of conversion
+- end of conversion selection = eof at the end of single conversions
 
 If many values are read, then different channels need to be sampled (IN1, temperature sensor channel and Vref):
 - ADC_Regular_ConversionMode > NumberOfConversions = #values (or of different sensors to be sampled)
 - set the correct Channels in every "Rank" label (and 480 cycles)
+- scan conversion mode = enabled
+- end of conversion = at the end of single channel conversion
+- dma continuous requests = disabled
+- continuous conversion mode = disabled
 
 ---
 
