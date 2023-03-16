@@ -60,15 +60,21 @@ static void MX_ADC1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+// buffer array for storing values for the potentiometer, temperature sensor and Vref
 uint16_t values[3];
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
 	char string[64];
-	float temperature = ((float) values[0] * 3.3 / 4096.0 - 0.76) / 2.5 + 25;
-	float potentiometer = (float) values[1] * 3.3 / 4096.0;
+	// potentiometer values from 0v to 3.3v
+	float potentiometer = (float) values[0] * 3.3 / 4096.0;
+	// temperature values using the formula provided
+	float temperature = ((float) values[1] * 3.3 / 4096.0 - 0.76) / 2.5 + 25.0;
+	// Vref values from 0v to 3.3v
 	float Vref = (float) values[2] * 3.3 / 4096.0;
-	int len = sprintf(string, "Potentiometer: %.3fV, Temp: %.3f C, Vref: %.3f V\r\n", potentiometer, temperature, Vref);
-	HAL_UART_Transmit(&huart2, (uint8_t*) string, len, 1000);
+
+	int len = snprintf(string, sizeof(string), "Potentiometer: %.3fV, Temp: %.3f C, Vref: %.3f V\r\n", potentiometer, temperature, Vref);
+	HAL_UART_Transmit(&huart2, (uint8_t*) string, len, 10);
 
 }
 /* USER CODE END 0 */
@@ -113,7 +119,8 @@ int main(void) {
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
-		HAL_ADC_Start_DMA(&hadc1, (uint32_t*) values, sizeof(uint16_t));
+		// starts DMA conversions with ADC of 3 values at a time. Values are half word (2 bytes)
+		HAL_ADC_Start_DMA(&hadc1, (uint32_t*) values, 3);
 		HAL_Delay(1000);
 
 	}
@@ -185,21 +192,21 @@ static void MX_ADC1_Init(void) {
 	hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
 	hadc1.Init.Resolution = ADC_RESOLUTION_12B;
 	hadc1.Init.ScanConvMode = ENABLE;
-	hadc1.Init.ContinuousConvMode = ENABLE;
+	hadc1.Init.ContinuousConvMode = DISABLE;
 	hadc1.Init.DiscontinuousConvMode = DISABLE;
 	hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
 	hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
 	hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
 	hadc1.Init.NbrOfConversion = 3;
 	hadc1.Init.DMAContinuousRequests = DISABLE;
-	hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
+	hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
 	if (HAL_ADC_Init(&hadc1) != HAL_OK) {
 		Error_Handler();
 	}
 
 	/** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
 	 */
-	sConfig.Channel = ADC_CHANNEL_TEMPSENSOR;
+	sConfig.Channel = ADC_CHANNEL_1;
 	sConfig.Rank = 1;
 	sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
 	if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
@@ -208,7 +215,7 @@ static void MX_ADC1_Init(void) {
 
 	/** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
 	 */
-	sConfig.Channel = ADC_CHANNEL_1;
+	sConfig.Channel = ADC_CHANNEL_TEMPSENSOR;
 	sConfig.Rank = 2;
 	if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
 		Error_Handler();
@@ -280,6 +287,8 @@ static void MX_DMA_Init(void) {
  */
 static void MX_GPIO_Init(void) {
 	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+	/* USER CODE BEGIN MX_GPIO_Init_1 */
+	/* USER CODE END MX_GPIO_Init_1 */
 
 	/* GPIO Ports Clock Enable */
 	__HAL_RCC_GPIOC_CLK_ENABLE();
@@ -303,6 +312,8 @@ static void MX_GPIO_Init(void) {
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
+	/* USER CODE BEGIN MX_GPIO_Init_2 */
+	/* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */

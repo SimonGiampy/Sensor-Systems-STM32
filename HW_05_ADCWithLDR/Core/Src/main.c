@@ -49,6 +49,7 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 
+void computeAvg(int half);
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -64,31 +65,36 @@ static void MX_TIM2_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-float values[1000];
-uint16_t converted = 0;
-int position = 0;
 
-// when the conversion is finished, every 1ms this is called
+// buffer of size 2000 for precise timing and avoiding overwriting data with DMA
+uint16_t samples[2000];
+
+// called after 1000 conversions (1 every 1 ms), so after 1 second
+void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef *hadc) {
+	computeAvg(0);
+}
+
+// called after 2000 conversions (1 every 1 ms), so after 2 seconds
+// this is called 1 second after the half complete callback
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
-	// converts values from 0 to 4096 to voltage (up to 3.3v)
-	values[position] = converted * 3.3 / 4096.0;
-	position++;
+	computeAvg(1);
+}
 
-	if (position == 1000) { // after 1 full second of conversions
-		float average = 0.0;
-		for (int i = 0; i < 1000; i++) {
-			average += values[i];
-		}
-		average = average / 1000.0; // average computation of the values over the last second of time
-
-		float ldr = ((average * 100000.0) / (3.3 - average)); // LDR output value
-		float lux = 10.0 * pow((100000.0 / ldr), 1.25); // conversion from voltage to LUX
-		char string[64]; // output
-		int length = snprintf(string, sizeof(string), "Lux level = %.3f\r\n", lux);
-
-		HAL_UART_Transmit(&huart2, (uint8_t*) string, length, 200);
-		position = 0;
+void computeAvg(int half) {
+	float average = 0.0;
+	for (int i = 0; i < 1000; i++) {
+		average += (float) samples[i + half * 1000];
 	}
+	// converts values from 0 to 4096 to voltage (up to 3.3v)
+	// average computation of the values over the last second of time
+	average = average * (3.3 / 4096.0) / 1000.0;
+
+	float ldr = ((average * 100000.0) / (3.3 - average)); // LDR output value
+	float lux = 10.0 * pow((100000.0 / ldr), 1.25); // conversion from voltage to LUX
+	char string[64]; // output
+	int length = snprintf(string, sizeof(string), "Lux level = %.3f\r\n", lux);
+
+	HAL_UART_Transmit(&huart2, (uint8_t*) string, length, 10);
 }
 /* USER CODE END 0 */
 
@@ -124,7 +130,7 @@ int main(void) {
 	MX_ADC1_Init();
 	MX_TIM2_Init();
 	/* USER CODE BEGIN 2 */
-	HAL_ADC_Start_DMA(&hadc1, (uint32_t*) &converted, sizeof(converted));
+	HAL_ADC_Start_DMA(&hadc1, (uint32_t*) samples, 2000);
 	HAL_TIM_Base_Start(&htim2);
 	/* USER CODE END 2 */
 
@@ -324,6 +330,8 @@ static void MX_DMA_Init(void) {
  */
 static void MX_GPIO_Init(void) {
 	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+	/* USER CODE BEGIN MX_GPIO_Init_1 */
+	/* USER CODE END MX_GPIO_Init_1 */
 
 	/* GPIO Ports Clock Enable */
 	__HAL_RCC_GPIOC_CLK_ENABLE();
@@ -347,6 +355,8 @@ static void MX_GPIO_Init(void) {
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
+	/* USER CODE BEGIN MX_GPIO_Init_2 */
+	/* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
