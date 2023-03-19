@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -67,7 +68,7 @@ int column_index = 0;
 int column_flag = 1;
 
 //keyboard mapping buttons to a character
-char map[16] = "FB73EA62D951C840";
+char map[16] = "0123456789ABCDEF";
 
 int keypress[16];
 int ack[16];
@@ -123,8 +124,10 @@ int main(void) {
 	char *string = (char*) malloc(4 * sizeof(char));
 	strcpy(string, "X\r\n");
 
-	float time_button_press = 2.0; // number of seconds necessary for printing a button press
-
+	float time_button_press = 1.0; // number of seconds necessary for printing a button press
+	for (int i = 0; i < 16; i++) {
+		ack[i] = 0;
+	}
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -133,10 +136,10 @@ int main(void) {
 
 		if (column_flag) {
 			// activates the columns iteratively
-			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, column_index == 0);
-			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, column_index == 1);
-			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, column_index == 2);
-			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_11, column_index == 3);
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, column_index == 1);
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, column_index == 0);
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, column_index == 3);
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_11, column_index == 2);
 
 			column_index = (column_index + 1) % 4; // iterates from 0 to 4 in loop
 			column_flag = 0;
@@ -144,41 +147,40 @@ int main(void) {
 		}
 
 		// reads every button press
-		keypress[4 * column_index] = !HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_3);
-		keypress[4 * column_index + 1] = !HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_2);
-		keypress[4 * column_index + 2] = !HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13);
-		keypress[4 * column_index + 3] = !HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_12);
+		keypress[column_index + 12] = !HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_3);
+		keypress[column_index + 8] = !HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_2);
+		keypress[column_index + 4] = !HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13);
+		keypress[column_index + 0] = !HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_12);
 
 		int timer_started = 0;
-		int counter = 0;
+		float counter = 0.0;
 		do {
 			// iterates until the button is being pressed
 			if (!timer_started && isAnyButtonPressed()) {
 				HAL_TIM_Base_Start(&htim5);
 				timer_started = 1;
 			}
-			counter = __HAL_TIM_GetCounter(&htim5);
-		} while (isAnyButtonPressed() && (counter <= 84000.0 * time_button_press - 1.0));
+			counter = (float) __HAL_TIM_GetCounter(&htim5);
+		} while (isAnyButtonPressed());
 		// until button is being pressed or the button is being pressed for the defined amount of seconds
 		// when the button is released, we count for how long it was pressed
 
-		HAL_TIM_Base_Stop(&htim5);
-		__HAL_TIM_SetCounter(&htim5, 0); // resets the counter after the timer is stopped
+		if (timer_started) {
+			HAL_TIM_Base_Stop(&htim5);
+			__HAL_TIM_SetCounter(&htim5, 0); // resets the counter after the timer is stopped
+			//__HAL_TIM_CLEAR_FLAG(&htim5, TIM_FLAG_UPDATE);
+		}
 
-		if ((counter > 84000.0 * time_button_press - 1.0) || !isAnyButtonPressed()) {
+		if ((counter > 84000.0 * time_button_press - 1.0)) {
 			// if a button was pressed for more than the defined threshold, it prints it in the terminal
 			for (int i = 0; i < 16; i++) {
 
 				if (keypress[i]) { // if the corresponding button was pressed
-					if (!ack[i]) {
-						// copies character corresponding to the pressed button in the string
-						string[0] = map[i];
-						// prints string containing the pressed character on terminal
-						HAL_UART_Transmit(&huart2, (uint8_t*) string, sizeof(string), 10);
-						ack[i] = 1;
-					}
-				} else {
-					ack[i] = 0;
+					// copies character corresponding to the pressed button in the string
+					string[0] = map[i];
+					// prints string containing the pressed character on terminal
+					HAL_UART_Transmit(&huart2, (uint8_t*) string, sizeof(string), 10);
+
 				}
 			}
 		}
@@ -250,9 +252,9 @@ static void MX_TIM2_Init(void) {
 
 	/* USER CODE END TIM2_Init 1 */
 	htim2.Instance = TIM2;
-	htim2.Init.Prescaler = 1000 - 1;
+	htim2.Init.Prescaler = 0;
 	htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-	htim2.Init.Period = 4200 - 1;
+	htim2.Init.Period = 420000 - 1;
 	htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
 	htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
 	if (HAL_TIM_Base_Init(&htim2) != HAL_OK) {
@@ -352,6 +354,8 @@ static void MX_USART2_UART_Init(void) {
  */
 static void MX_GPIO_Init(void) {
 	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+	/* USER CODE BEGIN MX_GPIO_Init_1 */
+	/* USER CODE END MX_GPIO_Init_1 */
 
 	/* GPIO Ports Clock Enable */
 	__HAL_RCC_GPIOC_CLK_ENABLE();
@@ -363,8 +367,7 @@ static void MX_GPIO_Init(void) {
 	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
 	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(GPIOC,
-	GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_10 | GPIO_PIN_11, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_10 | GPIO_PIN_11, GPIO_PIN_RESET);
 
 	/*Configure GPIO pins : PC13 PC2 PC3 PC12 */
 	GPIO_InitStruct.Pin = GPIO_PIN_13 | GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_12;
@@ -386,6 +389,8 @@ static void MX_GPIO_Init(void) {
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
+	/* USER CODE BEGIN MX_GPIO_Init_2 */
+	/* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
@@ -407,17 +412,17 @@ void Error_Handler(void) {
 
 #ifdef  USE_FULL_ASSERT
 /**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
 void assert_failed(uint8_t *file, uint32_t line)
 {
-	/* USER CODE BEGIN 6 */
+  /* USER CODE BEGIN 6 */
 	/* User can add his own implementation to report the file name and line number,
      ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-	/* USER CODE END 6 */
+  /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
