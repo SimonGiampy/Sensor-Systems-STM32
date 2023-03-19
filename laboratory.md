@@ -34,7 +34,7 @@ INTERRUPT MODE:
 - set the pin to be in GPIO_EXTIx 
 - enable in NVIC the EXTI interrupts that include x
 - check whether the interrupt routine is called on the rising or falling edge of the external event
-- write function `void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)`
+- callback function `void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)`
 - inside the callback, check the origin of the GPIO interrupt with `switch (GPIO_Pin) {case GPIO_PIN_13:}`
 
 Disabling interrupts with `HAL_NVIC_DisableIRQ(EXTI9_5_IRQn)` 
@@ -97,7 +97,7 @@ Parameter settings:
 
 ## UART:
 
-set pins for Tx and Rx (already set by default)
+set pins for Tx and Rx (already set by default). Baud rate = 115200 b/s
 
 - `HAL_UART_Receive(UART_HandleTypeDef*huart, uint8_t *pData, uint16_t Size, uint32_t Timeout)` 
 - `HAL_UART_Transmit(UART_HandleTypeDef*huart, uint8_t *pData, uint16_t Size, uint32_t Timeout)`
@@ -136,8 +136,8 @@ In order to read the value of the ADC, with values from 0 to 4096 (2^12):
 > `HAL_ADC_GetValue(&hadc1)`
 
 Interrupt callbacks for reading the converted value
-- Interrupt callback at half word: `void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef *hadc)`
-- Interrupt callback at full word: `void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)`
+- Interrupt at half of the values converted: `void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef *hadc)`
+- Interrupt at full number of values converted: `void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)`
 
 Pin connections and ADC channel:
 - PA0: ADC1_IN0 for the light LDR sensor
@@ -231,6 +231,7 @@ Keyboard mapping buttons to a character:
 Configuration:
 - timer 3 at 2400 Hz used to send an interrupt, waiting for the baud period, in order to send each bit every 1 / 2400 s (approximately 4 ms). Timer3 configured as a timer interrupt with PSC=0, ARR=35000-1
 - timer 2 PWM on channel 3 is used to make the IR led pulse at 38 KHz. PSC=0, ARR=2211-1. Transmission of bit 1 requires PWM_Stop, instead tranmitting bit 0 requires PWM_Start. Transmission lasts a baud period, until the next bit is transmitted.
+- infrared receiver output = high normally, output = low when IR light is detected
 - the string is transmitted one byte at a time, where each byte is composed of 8 bits, and each bit transmits at the baud rate
 - transmission via IR happens on UART1 interface at 2400 bytes/s baud rate
 - reception of character (1 byte = 8 bits) via IR happens with `void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)`
@@ -246,46 +247,54 @@ Project -> properties -> C/C++ build -> Settings -> MCU settings -> check printf
 
 ---
 
-# PROJECTS
+## HOMEWORK
 
-### **ADC**
+- HW_01_MICROPHONE : When a loud sound is detected the green led is switched on, when another loud sound is detected is switched off.
 
-- **TODO**: Lab 04 (proj1 modified): ADC-polling: ADC start + poll for conversion + software start in while loop
-	
-- HW04: ADC interrupt UART: ADC interrupt + Tim2 trigger out event (in TIM2: Trigger output=Update Event) when conversion ends callback called + output via UART interface
-- HW04. ADC interrupt LCD: ADC interrupt + Tim2 trigger out event callback + writing on LCD with drawbar
+- HW_01_PWM_LED: When a timer expires its callback swithc on or off the green led.
 
-- **TODO**: Lab 05 (proj3a): ADC DMA read 3 values: in while(1) HAL_ADC_Start_DMA with buffer of uint16_t. reads potentiometer, temperature of MCU, Vref, output via UART interface
+- HW_02_SONG_DELAY: When a loud sound is detected the song start playing, to change the note is used the delay function.
 
-- HW05: ADC read LDR with DMA and timer interrupt: reading LDR 1000 a second and sending average every second. Using DMA with length 2000 and reading both in half and full complete
+- HW_02_SONG_INTERRUPT: When a loud sound is detected the song start playing, to change the note is used a timer interrupt.
 
-### **I2C**
+- HW_03_LCD: Prints to the LCD screen the group member names.
 
-Lab06. I2C-TemperatureSensor: (temperature addr = 0b10010000), reading only the MSB
+- HW_03_UART_DMA: The names and the year of birth of all the group members are sent to a remote terminal using the UART communication.
 
-HW06:  I2C-TemperatureSensorFull: read MSB and LSB (2 bytes)
+- HW_04_ADC_LCD: The value of the voltage is converted using the adc and then is printed on the lcd screen (both numerical value and drawbar).
 
-LAb07 I2C-Accelerometer: reading 3 registers with I2C
+- HW_04_ADC_POLLING: Reads the voltage value using ADC and print the value in a remote terminal using the UART communication. The ADC works in polling mode, the program is started in the software (inside the while loop), is used the delay function to manage the time interleaving between two consecuitive print.
 
-HW07: I2C-Accelerometer-Interrupts-UART_DMA: using also UART DMA and a timer interrupt to trigger the sampling
+- HW_04_ADC_UART: Reads the voltage value using ADC with polling mode and print the value in a remote terminal using the UART communication. The ADC works in simple interrupt mode (when it expires the ADC converts the data), the program is started by a timer interrupt.
 
-HW07: I2C-Accelerometer-I2C_DMA-Interrupts-UART_DMA: using also I2C DMA (only in reception)
-	
+- HW_05_ADC_DMA_3VALUES: Are red the temperature, Vref and potentiometer values using the ADC and are sent to a remote terminal using the UART communication. The ADC is started in the software and work in simple interrupt configuration, using the DMA in circular mode. 
 
-### **SPI**
-HW08 : SPI-DMA-LedMatrix: two or more letters changing
-	
-### **Encoder**
-HW09 : encoder readout with velocity, considering overflow and underflow
+- HW_O5_ADC_LDR: The LDR sensor is used to obtain 2000 samples of lux intensity, is done the avreage (the samples are aquired together and not singularly because otherwhise in the meanwhile that the average is beign computed som of the samples can be overwritten producing an incorrect result). Then the average value of lux intensity is sent to a remote terminal using the UART communication.
 
-### **Keyboard**
-HW10 : keyboard-DMA: polling read of keyboard, usage of timer interrupt for selection
-	
-### **IR**
-- IR-Receiver: infrared communication receiver. receives data in UART protocol (from UART1) modulated at 38kHz and sends every byte received to the default serial port (UART2).
-- IR-Transceiver: both ends of the infrared communication, the transmitting part (that implements literally the uart protocol with the modulation of 38kHz) and the receiving part (that implements the already present receiving part)
-- IR-Transceiver-Accelerometer: both ends of the infrared communication, transmitting the three accelerations on the three axis as values (not as formatted strings) and printing them on the LCD. usage of libraries
+- HW_06_I2C_11BIT_TEMPERATURE: Is red the temperature value (using 11 bit of precision) using the I2C commmunication, then is sent to a remote terminal using the UART communication.
 
-### Exams question samples
-1. Exam22-12: scanning the LDR 1000 times and return the average. Stopping the conversion when pressed a corner keybutton of the keyboard
-2. exam-24-02: both ends of the infrared communication, transmitting the temperature of the I2C sensor (not as formatted strings) and printing it on the LCD
+- HW_07ACCELEROMETER_UART_DMA: Is red the accelerometer x,y and z values using the I2C communication, then they're sent to a remote terminal using the UART DMA communication.
+
+- HW_07ACCELEROMETER_UART_I2C_DMA: Is red the accelerometer x,y and z values using the I2C communication in DMA mode, then they're sent to a remote terminal using the UART DMA communication.
+
+- HW_08_LED_MATRIX_DMA: Alternates the letter and the number of the group in the led matrix. It's used the SPI DMA commmunication.
+
+- HW_09_ENCODER: Is retrieved the absolute value of the encoder and the difference of this value and the previous count is sent to a remote terminal using the UART communication. 
+
+- HW_10_KEYBOARD: When a button of the keyboard is pressed  is sent to a remote terminal the corresponding character. 
+
+- HW_10_KEYBOARD_TIMERS: When a button of the keyboard is being pressed for a specific amount of time (in this case 2 seconds) the corresponding character is sent to a remote terminal, if the same button continue to be pressed without releasing it, its character must not be sent again to the terminal.
+
+- HW_11_IR: A string is form the IR transmitter to the IR receiver, then the receiver re-transmit it to a remote terminal using the UART communication. 
+
+- HW_11_2_IR_KEYBOARD: When a button of the keyboard is pressed the corresponding character is sent from the IR receiver to the IR transmitter. When the character is received is shown in the LED matrix using the SPI communication.
+
+---
+
+## Exams question samples
+1. Scanning the LDR 1000 times and return the average. Stopping the conversion when pressed a corner keybutton of the keyboard
+2. Both ends of the infrared communication, transmitting the temperature of the I2C sensor (not as formatted strings) and printing it on the LCD
+3. Ine the LSD project when the microphone detetcts a sound the display stop to show all the names and keep showing only the last one
+4. In the project of the keyboard if you push a button in the corner it produces a sound (different for each corner),if you oush any other button sitch on a led (if no button are pressed nothing has to be done)
+5. In the project of the accelerometer every one second provide the average of 1000 acceleration values of the three axes
+6. In the project of the led-matrix let alternate the two letters when the micorphone detects a sound and keep it working for 10 seconds
